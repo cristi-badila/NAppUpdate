@@ -31,7 +31,15 @@ namespace FeedBuilder
 		public string FileName { get; set; }
 		public bool ShowGui { get; set; }
 
-		#endregion
+	    private Settings Settings
+	    {
+	        get
+	        {
+	            return CustomSettingsProvider.Instance.Settings;
+	        }
+	    }
+
+	    #endregion
 
 		#region " Loading/Initialization/Lifetime"
 
@@ -55,8 +63,9 @@ namespace FeedBuilder
 			FileName = _argParser.FileName;
 			if (!string.IsNullOrEmpty(FileName)) {
 				if (File.Exists(FileName)) {
-					FeedBuilderSettingsProvider p = new FeedBuilderSettingsProvider();
+					var p = CustomSettingsProvider.Instance;
 					p.LoadFrom(FileName);
+                    InitializeFormSettings();
 				} else {
 					_argParser.ShowGui = true;
 					_argParser.Build = false;
@@ -71,21 +80,21 @@ namespace FeedBuilder
 
 		private void InitializeFormSettings()
 		{
-			if (!string.IsNullOrEmpty(Settings.Default.OutputFolder) && Directory.Exists(Settings.Default.OutputFolder)) txtOutputFolder.Text = Settings.Default.OutputFolder;
-			if (!string.IsNullOrEmpty(Settings.Default.FeedXML)) txtFeedXML.Text = Settings.Default.FeedXML;
-			if (!string.IsNullOrEmpty(Settings.Default.BaseURL)) txtBaseURL.Text = Settings.Default.BaseURL;
+			if (!string.IsNullOrEmpty(Settings.OutputFolder) && Directory.Exists(Settings.OutputFolder)) txtOutputFolder.Text = Settings.OutputFolder;
+            if (!string.IsNullOrEmpty(Settings.FeedXml)) txtFeedXML.Text = Settings.FeedXml;
+            if (!string.IsNullOrEmpty(Settings.BaseUrl)) txtBaseURL.Text = Settings.BaseUrl;
 
-			chkVersion.Checked = Settings.Default.CompareVersion;
-			chkSize.Checked = Settings.Default.CompareSize;
-			chkDate.Checked = Settings.Default.CompareDate;
-			chkHash.Checked = Settings.Default.CompareHash;
+			chkVersion.Checked = Settings.CompareVersion;
+			chkSize.Checked = Settings.CompareSize;
+			chkDate.Checked = Settings.CompareDate;
+			chkHash.Checked = Settings.CompareHash;
 
-			chkIgnoreSymbols.Checked = Settings.Default.IgnoreDebugSymbols;
-			chkIgnoreVsHost.Checked = Settings.Default.IgnoreVsHosting;
-			chkCopyFiles.Checked = Settings.Default.CopyFiles;
-			chkCleanUp.Checked = Settings.Default.CleanUp;
+			chkIgnoreSymbols.Checked = Settings.IgnoreDebugSymbols;
+			chkIgnoreVsHost.Checked = Settings.IgnoreVsHosting;
+			chkCopyFiles.Checked = Settings.CopyFiles;
+			chkCleanUp.Checked = Settings.Cleanup;
 
-			if (Settings.Default.IgnoreFiles == null) Settings.Default.IgnoreFiles = new StringCollection();
+			if (Settings.IgnoreFiles == null) Settings.IgnoreFiles = new StringCollection();
 			ReadFiles();
 			UpdateTitle();
 		}
@@ -99,26 +108,26 @@ namespace FeedBuilder
 		private void SaveFormSettings()
 		{
 
-			if (!string.IsNullOrEmpty(txtOutputFolder.Text.Trim()) && Directory.Exists(txtOutputFolder.Text.Trim())) Settings.Default.OutputFolder = txtOutputFolder.Text.Trim();
+			if (!string.IsNullOrEmpty(txtOutputFolder.Text.Trim()) && Directory.Exists(txtOutputFolder.Text.Trim())) Settings.OutputFolder = txtOutputFolder.Text.Trim();
 // ReSharper disable AssignNullToNotNullAttribute
-			if (!string.IsNullOrEmpty(txtFeedXML.Text.Trim()) && Directory.Exists(Path.GetDirectoryName(txtFeedXML.Text.Trim()))) Settings.Default.FeedXML = txtFeedXML.Text.Trim();
+			if (!string.IsNullOrEmpty(txtFeedXML.Text.Trim()) && Directory.Exists(Path.GetDirectoryName(txtFeedXML.Text.Trim()))) Settings.FeedXml = txtFeedXML.Text.Trim();
 // ReSharper restore AssignNullToNotNullAttribute
-			if (!string.IsNullOrEmpty(txtBaseURL.Text.Trim())) Settings.Default.BaseURL = txtBaseURL.Text.Trim();
+			if (!string.IsNullOrEmpty(txtBaseURL.Text.Trim())) Settings.BaseUrl = txtBaseURL.Text.Trim();
 
-			Settings.Default.CompareVersion = chkVersion.Checked;
-			Settings.Default.CompareSize = chkSize.Checked;
-			Settings.Default.CompareDate = chkDate.Checked;
-			Settings.Default.CompareHash = chkHash.Checked;
+			Settings.CompareVersion = chkVersion.Checked;
+			Settings.CompareSize = chkSize.Checked;
+			Settings.CompareDate = chkDate.Checked;
+			Settings.CompareHash = chkHash.Checked;
 
-			Settings.Default.IgnoreDebugSymbols = chkIgnoreSymbols.Checked;
-			Settings.Default.IgnoreVsHosting = chkIgnoreVsHost.Checked;
-			Settings.Default.CopyFiles = chkCopyFiles.Checked;
-			Settings.Default.CleanUp = chkCleanUp.Checked;
+			Settings.IgnoreDebugSymbols = chkIgnoreSymbols.Checked;
+			Settings.IgnoreVsHosting = chkIgnoreVsHost.Checked;
+			Settings.CopyFiles = chkCopyFiles.Checked;
+			Settings.Cleanup= chkCleanUp.Checked;
 
-			if (Settings.Default.IgnoreFiles==null) Settings.Default.IgnoreFiles = new StringCollection();
-			Settings.Default.IgnoreFiles.Clear();
+			if (Settings.IgnoreFiles==null) Settings.IgnoreFiles = new StringCollection();
+			Settings.IgnoreFiles.Clear();
 			foreach (ListViewItem thisItem in lstFiles.Items) {
-				if (!thisItem.Checked) Settings.Default.IgnoreFiles.Add(thisItem.Text);
+				if (!thisItem.Checked) Settings.IgnoreFiles.Add(thisItem.Text);
 			}
 		}
 
@@ -143,7 +152,7 @@ namespace FeedBuilder
 
 		private void btnNew_Click(Object sender, EventArgs e)
 		{
-			Settings.Default.Reset();
+			Settings.Reset();
 			InitializeFormSettings();
 		}
 
@@ -159,7 +168,7 @@ namespace FeedBuilder
 			} else dlg = _openDialog;
 			dlg.Filter = DialogFilter;
 			if (dlg.ShowDialog() != DialogResult.OK) return;
-			FeedBuilderSettingsProvider p = new FeedBuilderSettingsProvider();
+			var p = CustomSettingsProvider.Instance;
 			p.LoadFrom(dlg.FileName);
 			FileName = dlg.FileName;
 			InitializeFormSettings();
@@ -454,7 +463,7 @@ namespace FeedBuilder
 				thisItem.SubItems.Add(thisInfo.FileInfo.Length.ToString(CultureInfo.InvariantCulture));
 				thisItem.SubItems.Add(thisInfo.FileInfo.LastWriteTime.ToString(CultureInfo.InvariantCulture));
 				thisItem.SubItems.Add(thisInfo.Hash);
-				thisItem.Checked = (!Settings.Default.IgnoreFiles.Contains(thisInfo.FileInfo.Name));
+				thisItem.Checked = (!Settings.IgnoreFiles.Contains(thisInfo.FileInfo.Name));
 				thisItem.Tag = thisInfo;
 				lstFiles.Items.Add(thisItem);
 			}
@@ -478,12 +487,12 @@ namespace FeedBuilder
 				};
 				DialogResult result = dlg.ShowDialog();
 				if (result == DialogResult.OK) {
-					FeedBuilderSettingsProvider p = new FeedBuilderSettingsProvider();
+					var p = CustomSettingsProvider.Instance;
 					p.SaveAs(dlg.FileName);
 					FileName = dlg.FileName;
 				}
 			} else {
-				FeedBuilderSettingsProvider p = new FeedBuilderSettingsProvider();
+				var p = CustomSettingsProvider.Instance;
 				p.SaveAs(FileName);
 			}
 			UpdateTitle();
@@ -504,7 +513,7 @@ namespace FeedBuilder
 			if (files.Length == 0) return;
 			try {
 				string fileName = files[0];
-				FeedBuilderSettingsProvider p = new FeedBuilderSettingsProvider();
+				var p = CustomSettingsProvider.Instance;
 				p.LoadFrom(fileName);
 				FileName = fileName;
 				InitializeFormSettings();
