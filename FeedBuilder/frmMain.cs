@@ -267,16 +267,12 @@ namespace FeedBuilder
 					// generate FileUpdateTask metadata items
 					task.SetAttribute("lastModified", fileInfoEx.FileInfo.LastWriteTime.ToFileTime().ToString(CultureInfo.InvariantCulture));
 					task.SetAttribute("fileSize", fileInfoEx.FileInfo.Length.ToString(CultureInfo.InvariantCulture));
+                    task.SetAttribute("hotswap", true.ToString());
 					if (!string.IsNullOrEmpty(fileInfoEx.FileVersion)) task.SetAttribute("version", fileInfoEx.FileVersion);
 
 					XmlElement conds = doc.CreateElement("Conditions");
 					XmlElement cond;
 					bool hasFirstCondition = false;
-
-                    //File Exists
-                    cond = doc.CreateElement("FileExistsCondition");
-                    cond.SetAttribute("type", "or");
-                    conds.AppendChild(cond);
                     
 
 					//Version
