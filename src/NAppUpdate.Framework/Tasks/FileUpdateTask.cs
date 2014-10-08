@@ -26,6 +26,11 @@ namespace NAppUpdate.Framework.Tasks
 			, false)]
 		public bool CanHotSwap { get; set; }
 
+        [NauField("version",
+            "Version of the file to be updated"
+            , false)]
+        public string Version { get; set; }
+
 		private string _destinationFile, _backupFile, _tempFile;
 
 		public override void Prepare(Sources.IUpdateSource source)
