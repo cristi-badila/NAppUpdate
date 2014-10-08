@@ -1,10 +1,11 @@
 using System.Diagnostics;
 using System.IO;
-using NAppUpdate.Framework.Utils;
 
 namespace FeedBuilder
 {
-	public class FileInfoEx
+    using Microsoft.Deployment.WindowsInstaller;
+
+    public class FileInfoEx
 	{
 		private readonly FileInfo myFileInfo;
 		private readonly string myFileVersion;
@@ -30,10 +31,23 @@ namespace FeedBuilder
 		public FileInfoEx(string fileName, int rootDirLength)
 		{
 			myFileInfo = new FileInfo(fileName);
-			myFileVersion = FileVersionInfo.GetVersionInfo(fileName).FileVersion;
+		    myFileVersion = fileName.EndsWith(".msi")
+		                        ? GetMSIVersion(fileName)
+		                        : FileVersionInfo.GetVersionInfo(fileName).FileVersion;
 			if (myFileVersion != null) myFileVersion = myFileVersion.Replace(", ", ".");
 			myHash = NAppUpdate.Framework.Utils.FileChecksum.GetSHA256Checksum(fileName);
             RelativeName = fileName.Substring(rootDirLength + 1);
 		}
+
+        private string GetMSIVersion(string msiPath)
+	    {
+            string versionString;
+            using (var database = new Database(msiPath))
+            {
+                versionString = database.ExecuteScalar("SELECT `Value` FROM `Property` WHERE `Property` = '{0}'", "ProductVersion") as string;
+            }
+
+            return versionString;
+	    }
 	}
 }
